@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Rapport de chantier — Slab Construction</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --navy:#2A2E33;
@@ -320,7 +321,7 @@
 
 <div class="bottom-bar">
   <button class="btn btn-secondary" id="printBtn" type="button">Imprimer / PDF</button>
-  <button class="btn btn-primary" id="emailBtn" type="button">Envoyer par email</button>
+  <button class="btn btn-primary" id="emailBtn" type="button">Envoyer le PDF</button>
 </div>
 
 <script>
@@ -605,21 +606,196 @@ function buildSummaryText(){
   if(autres) lines.push("Autres infos : " + autres);
 
   lines.push("");
-  lines.push("(Signature enregistrée sur le formulaire — pour l'avoir dans l'email, utiliser d'abord \"Imprimer / PDF\" puis joindre le PDF manuellement.)");
+  lines.push("(Récapitulatif texte — le rapport complet avec signature est joint en PDF à cet email.)");
   return lines.join("\n");
 }
 
-document.getElementById("emailBtn").addEventListener("click", ()=>{
+function sanitizeFilePart(s){
+  return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "sans_nom";
+}
+
+function buildPdfDoc(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = 210, pageH = 297, margin = 14;
+  let y = 0;
+
+  const navy = [42, 46, 51], petrol = [26, 123, 140], orange = [238, 105, 30], muted = [107, 115, 120];
+
+  // Header band
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, pageW, 22, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("SLAB", margin, 11);
+  doc.setTextColor(...orange);
+  doc.text("CONSTRUCTION", margin + 20, 11);
+  doc.setFontSize(10);
+  doc.setTextColor(230, 230, 230);
+  doc.text("Rapport de chantier hebdomadaire", margin, 18);
+  y = 30;
+
+  const chantier = document.getElementById("chantier").value.trim() || "(non renseigné)";
+  const ville = document.getElementById("ville").value.trim();
+  const responsable = document.getElementById("responsable").value.trim() || "(non renseigné)";
+  const du = document.getElementById("semaineDu").value || "?";
+  const au = document.getElementById("semaineAu").value || "?";
+
+  doc.setTextColor(...navy);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10.5);
+  doc.text("Chantier : " + chantier + (ville ? "  —  " + ville : ""), margin, y); y += 6;
+  doc.text("Responsable de chantier : " + responsable, margin, y); y += 6;
+  doc.text("Semaine du " + du + " au " + au, margin, y); y += 9;
+
+  // Table
+  const colX = [margin, margin + 60, margin + 84, margin + 108, margin + 132, margin + 156, margin + 180];
+  const colW = [60, 24, 24, 24, 24, 24, pageW - margin - (margin + 180)];
+  const headers = ["Nom / Prénom", "LUN", "MAR", "MER", "JEU", "VEN", "Total"];
+  const rowH = 7;
+
+  function drawTableHeader(){
+    doc.setFillColor(...petrol);
+    doc.rect(margin, y, pageW - 2 * margin, rowH, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    headers.forEach((h, i) => doc.text(h, colX[i] + 2, y + rowH - 2.3));
+    y += rowH;
+  }
+  drawTableHeader();
+
+  let weekTotal = 0;
+  let anyRow = false;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  listEl.querySelectorAll(".employee").forEach(emp => {
+    const name = emp.querySelector(".employee-head input").value.trim();
+    const hours = Array.from(emp.querySelectorAll(".days-grid input")).map(i => i.value || "0");
+    const total = hours.reduce((s, h) => s + (parseFloat(h) || 0), 0);
+    weekTotal += total;
+    if(!name) return;
+    anyRow = true;
+    if(y + rowH > pageH - 20){
+      doc.addPage();
+      y = 16;
+      drawTableHeader();
+    }
+    doc.setDrawColor(218, 223, 224);
+    doc.rect(margin, y, pageW - 2 * margin, rowH);
+    doc.setTextColor(...navy);
+    doc.text(name.substring(0, 32), colX[0] + 2, y + rowH - 2.3);
+    hours.forEach((h, i) => {
+      doc.text((parseFloat(h) || 0).toString().replace(".", ","), colX[i + 1] + colW[i + 1] / 2, y + rowH - 2.3, { align: "center" });
+    });
+    doc.setFont("helvetica", "bold");
+    doc.text(total.toString().replace(".", ",") + " h", colX[6] + 2, y + rowH - 2.3);
+    doc.setFont("helvetica", "normal");
+    y += rowH;
+  });
+  if(!anyRow){
+    doc.setTextColor(...muted);
+    doc.text("(aucune heure saisie)", margin + 2, y + rowH - 2.3);
+    y += rowH;
+  }
+  y += 4;
+
+  doc.setFillColor(...petrol);
+  doc.rect(margin, y, pageW - 2 * margin, 9, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("TOTAL SEMAINE : " + weekTotal.toString().replace(".", ",") + " h", margin + 3, y + 6.3);
+  y += 16;
+
+  doc.setTextColor(...navy);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Véhicule personnel utilisé : " + (document.getElementById("vehiculeCheck").checked ? "Oui" : "Non"), margin, y); y += 6;
+  doc.text("Paniers repas : " + (document.getElementById("repas").value || "0"), margin, y); y += 6;
+
+  const trajet = document.getElementById("trajet").value.trim();
+  if(trajet){
+    const lines = doc.splitTextToSize("Trajet : " + trajet, pageW - 2 * margin);
+    doc.text(lines, margin, y); y += 5 * lines.length + 1;
+  }
+  const autres = document.getElementById("autres").value.trim();
+  if(autres){
+    const lines = doc.splitTextToSize("Autres informations : " + autres, pageW - 2 * margin);
+    doc.text(lines, margin, y); y += 5 * lines.length + 1;
+  }
+
+  y += 4;
+  doc.setFont("helvetica", "bold");
+  doc.text("Signature :", margin, y);
+  y += 3;
+  if(sigHasContent){
+    try{
+      const imgData = canvas.toDataURL("image/png");
+      doc.addImage(imgData, "PNG", margin, y, 70, 25);
+    }catch(e){}
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...muted);
+    doc.text("(non signé)", margin, y + 6);
+  }
+
+  doc.setFontSize(8);
+  doc.setTextColor(...muted);
+  doc.text("SLAB CONSTRUCTION — Rapport de chantier généré depuis le formulaire mobile", margin, pageH - 10);
+
+  return doc;
+}
+
+document.getElementById("emailBtn").addEventListener("click", async ()=>{
   const chantier = document.getElementById("chantier").value.trim() || "chantier";
   const du = document.getElementById("semaineDu").value;
   const au = document.getElementById("semaineAu").value;
   let subject = "Rapport de chantier - " + chantier;
   if(du) subject += " - semaine du " + du + (au ? " au " + au : "");
   const dest = document.getElementById("destEmail").value.trim();
-  const mailtoUrl = "mailto:" + encodeURIComponent(dest)
-    + "?subject=" + encodeURIComponent(subject)
-    + "&body=" + encodeURIComponent(buildSummaryText());
-  window.location.href = mailtoUrl;
+  const filename = "rapport_chantier_" + sanitizeFilePart(chantier) + (du ? "_" + du : "") + ".pdf";
+
+  let pdfBlob;
+  try{
+    const doc = buildPdfDoc();
+    pdfBlob = doc.output("blob");
+  }catch(e){
+    setStatus("Erreur lors de la génération du PDF");
+    return;
+  }
+
+  const file = new File([pdfBlob], filename, { type: "application/pdf" });
+
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
+    try{
+      await navigator.share({ files: [file], title: subject, text: subject });
+      return;
+    }catch(e){
+      // annulé ou échoué -> on retombe sur le repli ci-dessous
+    }
+  }
+
+  // Repli : télécharger le PDF puis ouvrir la messagerie avec le texte prérempli
+  const url = URL.createObjectURL(pdfBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+
+  setStatus("PDF téléchargé — joignez-le manuellement dans l'email qui s'ouvre");
+
+  setTimeout(()=>{
+    const mailtoUrl = "mailto:" + encodeURIComponent(dest)
+      + "?subject=" + encodeURIComponent(subject)
+      + "&body=" + encodeURIComponent(buildSummaryText() + "\n\n(Pensez à joindre le fichier PDF téléchargé : " + filename + ")");
+    window.location.href = mailtoUrl;
+  }, 800);
 });
 
 document.getElementById("printBtn").addEventListener("click", ()=> window.print());
