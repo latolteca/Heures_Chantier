@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Rapport de chantier — Slab Construction</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --navy:#2A2E33;
+    --petrol:#1A7B8C;
+    --orange:#EE691E;
+    --bg:#F5F6F5;
+    --card:#FFFFFF;
+    --border:#DADFE0;
+    --muted:#6B7378;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--navy);
+    padding-bottom:100px;
+  }
+  header{
+    background:var(--navy);
+    color:#fff;
+    padding:18px 16px 16px;
+    position:sticky;
+    top:0;
+    z-index:10;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  }
+  .logo{
+    font-size:20px;
+    font-weight:bold;
+    letter-spacing:0.5px;
+  }
+  .logo span{color:var(--orange);}
+  h1{
+    font-size:17px;
+    margin:14px 0 0;
+    border-left:4px solid var(--orange);
+    padding-left:8px;
+  }
+  main{padding:14px;max-width:640px;margin:0 auto;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:14px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    color:var(--petrol);
+    margin:0 0 10px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:6px;
+  }
+  label{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:3px;
+  }
+  select{
+    -webkit-appearance:none;
+    appearance:none;
+    padding-right:32px;
+    background-image:linear-gradient(45deg, transparent 50%, var(--petrol) 50%), linear-gradient(135deg, var(--petrol) 50%, transparent 50%);
+    background-position:calc(100% - 18px) center, calc(100% - 13px) center;
+    background-size:5px 5px, 5px 5px;
+    background-repeat:no-repeat;
+  }
+  input[type=text], input[type=date], input[type=number], select, textarea{
+    width:100%;
+    font-family:inherit;
+    font-size:15px;
+    padding:9px 10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:#fff;
+    color:var(--navy);
+    margin-bottom:10px;
+  }
+  input:focus, textarea:focus{
+    outline:2px solid var(--petrol);
+    outline-offset:1px;
+  }
+  .row2{display:flex;gap:10px;}
+  .row2 > div{flex:1;}
+  .employee{
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px;
+    margin-bottom:10px;
+    background:#FAFBFB;
+  }
+  .employee-head{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .employee-head input{margin-bottom:0;flex:1;font-weight:bold;}
+  .remove-btn{
+    background:none;
+    border:1px solid var(--border);
+    color:var(--muted);
+    width:32px;height:32px;
+    border-radius:6px;
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .days-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:6px;
+  }
+  .day-cell{text-align:center;}
+  .day-cell label{font-size:10px;text-align:center;margin-bottom:2px;color:var(--petrol);font-weight:bold;}
+  .day-cell input{
+    padding:8px 4px;
+    text-align:center;
+    margin-bottom:0;
+    font-size:14px;
+  }
+  .emp-total{
+    text-align:right;
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+  .emp-total b{color:var(--navy);}
+  .add-btn{
+    width:100%;
+    padding:11px;
+    background:#fff;
+    border:1.5px dashed var(--petrol);
+    color:var(--petrol);
+    border-radius:8px;
+    font-size:14px;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:2px;
+  }
+  .total-week{
+    background:var(--petrol);
+    color:#fff;
+    border-radius:8px;
+    padding:12px 14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:14px;
+    margin-bottom:14px;
+  }
+  .total-week b{font-size:20px;}
+  .info-line{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+    font-size:13px;
+  }
+  .info-line input[type=checkbox]{
+    width:18px;height:18px;flex-shrink:0;
+  }
+  .note{
+    font-size:11px;
+    color:var(--muted);
+    background:#F0F3F3;
+    border-left:3px solid var(--petrol);
+    padding:8px 10px;
+    border-radius:4px;
+    margin-bottom:10px;
+    line-height:1.5;
+  }
+  canvas{
+    width:100%;
+    height:140px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:#fff;
+    touch-action:none;
+    display:block;
+  }
+  .sig-actions{
+    display:flex;
+    justify-content:space-between;
+    margin-top:6px;
+  }
+  .link-btn{
+    background:none;border:none;color:var(--petrol);font-size:12px;text-decoration:underline;cursor:pointer;padding:4px;
+  }
+  .bottom-bar{
+    position:fixed;
+    bottom:0;left:0;right:0;
+    background:#fff;
+    border-top:1px solid var(--border);
+    padding:10px 14px;
+    display:flex;
+    gap:10px;
+    box-shadow:0 -2px 8px rgba(0,0,0,0.08);
+  }
+  .btn{
+    flex:1;
+    padding:13px;
+    border-radius:8px;
+    border:none;
+    font-size:14px;
+    font-weight:bold;
+    cursor:pointer;
+  }
+  .btn-primary{background:var(--orange);color:#fff;}
+  .btn-secondary{background:#fff;color:var(--navy);border:1px solid var(--border);}
+  .status{
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+    margin:-4px 0 10px;
+    min-height:14px;
+  }
+  @media print{
+    header{position:static;box-shadow:none;}
+    .bottom-bar, .add-btn, .remove-btn, .sig-actions, .status{display:none !important;}
+    body{padding-bottom:0;background:#fff;}
+    .card{break-inside:avoid;border:1px solid #999;}
+    input, textarea{border:none;border-bottom:1px solid #999;border-radius:0;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SLAB <span>CONSTRUCTION</span></div>
+  <h1>Rapport de chantier hebdomadaire</h1>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>Informations générales</h2>
+    <label for="responsable">Responsable de chantier (nom, prénom)</label>
+    <select id="responsable">
+      <option value="">-- Choisir un ouvrier --</option>
+    </select>
+
+    <div class="row2">
+      <div>
+        <label for="semaineDu">Semaine du</label>
+        <input type="date" id="semaineDu">
+      </div>
+      <div>
+        <label for="semaineAu">au</label>
+        <input type="date" id="semaineAu">
+      </div>
+    </div>
+
+    <label for="chantier">Nom du chantier</label>
+    <input type="text" id="chantier" placeholder="Ex : FOA Cairon">
+
+    <label for="ville">Ville</label>
+    <input type="text" id="ville" placeholder="Ex : Caen">
+
+    <label for="destEmail">Email du bureau (destinataire)</label>
+    <input type="email" id="destEmail" placeholder="bureau@slabconstruction.fr" value="contact@slab-construction.fr">
+  </div>
+
+  <div class="card">
+    <h2>Heures travaillées</h2>
+    <div class="note">Horaires de chantier : 8h00–12h00 / 13h00–16h00. HRS TR = heures travaillées (base 7h00), dans la limite de 10h/jour.</div>
+
+    <div id="employeeList"></div>
+    <datalist id="workerPoolList"></datalist>
+    <div class="note" id="emptyHint">Aucun ouvrier ajouté pour le moment — utilisez le bouton ci-dessous pour en ajouter.</div>
+    <button class="add-btn" id="addEmployeeBtn" type="button">+ Ajouter un ouvrier</button>
+  </div>
+
+  <div class="total-week">
+    <span>Total heures semaine</span>
+    <b id="weekTotal">0 h</b>
+  </div>
+
+  <div class="card">
+    <h2>Infos complémentaires</h2>
+    <div class="info-line">
+      <input type="checkbox" id="vehiculeCheck">
+      <label for="vehiculeCheck" style="margin:0;">Utilisation d'un véhicule personnel (à la demande de la direction uniquement)</label>
+    </div>
+    <label for="repas">Repas — nombre de paniers (12,00 € / panier, pour 6h de travail effectif)</label>
+    <input type="number" id="repas" min="0" placeholder="0">
+
+    <label for="trajet">Trajet</label>
+    <textarea id="trajet" rows="2" placeholder="Consulter les modalités de versement au bureau"></textarea>
+
+    <label for="autres">Autres informations</label>
+    <textarea id="autres" rows="3"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>Signature</h2>
+    <canvas id="sigPad"></canvas>
+    <div class="sig-actions">
+      <button class="link-btn" id="clearSigBtn" type="button">Effacer la signature</button>
+    </div>
+  </div>
+
+  <div class="status" id="statusMsg"></div>
+  <div style="text-align:center;margin-bottom:10px;">
+    <button class="link-btn" id="resetBtn" type="button">Réinitialiser le formulaire</button>
+  </div>
+
+</main>
+
+<div class="bottom-bar">
+  <button class="btn btn-secondary" id="printBtn" type="button">Imprimer / PDF</button>
+  <button class="btn btn-primary" id="emailBtn" type="button">Envoyer le PDF</button>
+</div>
+
+<script>
+const WORKER_POOL = [
+  "BUNEL Frédéric","CHIRON Dorian","DJERA Cédric","JAMET Denis","LEROY Loic",
+  "LIARD Sébastien","PALAMA Christopher","RAMSPACHER Lohann","TAILLEBOSQ Romain",
+  "CORNILLET Nicolas","DELAUNAY Ruben","GOUPIL Cédric","HUGUET Thibault",
+  "ISMAILI Hachmat","MASSON Adrien","NABE Lancine","REZNICEK Samuel","ROUSSEL Kévin"
+];
+const DAYS = ["LUN","MAR","MER","JEU","VEN"];
+const STORAGE_KEY = "cg2i_rapport_chantier_v1";
+
+const listEl = document.getElementById("employeeList");
+
+function makeEmployeeRow(name, hours){
+  hours = hours || [0,0,0,0,0];
+  const div = document.createElement("div");
+  div.className = "employee";
+
+  const head = document.createElement("div");
+  head.className = "employee-head";
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.value = name || "";
+  nameInput.placeholder = "Nom Prénom";
+  nameInput.setAttribute("list", "workerPoolList");
+  nameInput.addEventListener("input", ()=>{ refreshResponsableOptions(); saveState(); });
+  const removeBtn = document.createElement("button");
+  removeBtn.className = "remove-btn";
+  removeBtn.type = "button";
+  removeBtn.textContent = "✕";
+  removeBtn.addEventListener("click", () => { div.remove(); updateAll(); refreshResponsableOptions(); });
+  head.appendChild(nameInput);
+  head.appendChild(removeBtn);
+
+  const grid = document.createElement("div");
+  grid.className = "days-grid";
+  DAYS.forEach((d,i)=>{
+    const cell = document.createElement("div");
+    cell.className = "day-cell";
+    const lab = document.createElement("label");
+    lab.textContent = d;
+    const inp = document.createElement("input");
+    inp.type = "number";
+    inp.min = "0";
+    inp.max = "10";
+    inp.step = "0.5";
+    inp.value = hours[i] || "";
+    inp.placeholder = "0";
+    inp.addEventListener("input", updateAll);
+    cell.appendChild(lab);
+    cell.appendChild(inp);
+    grid.appendChild(cell);
+  });
+
+  const total = document.createElement("div");
+  total.className = "emp-total";
+  total.innerHTML = 'Total : <b class="rowTotal">0</b> h';
+
+  div.appendChild(head);
+  div.appendChild(grid);
+  div.appendChild(total);
+  return div;
+}
+
+function refreshResponsableOptions(){
+  const select = document.getElementById("responsable");
+  const current = select.value;
+  const addedNames = Array.from(listEl.querySelectorAll(".employee-head input"))
+    .map(i => i.value.trim())
+    .filter(Boolean);
+  const names = [...WORKER_POOL];
+  addedNames.forEach(n => { if(!names.includes(n)) names.push(n); });
+  select.innerHTML = "";
+  const emptyOpt = document.createElement("option");
+  emptyOpt.value = "";
+  emptyOpt.textContent = "-- Choisir un ouvrier --";
+  select.appendChild(emptyOpt);
+  names.forEach(n=>{
+    const opt = document.createElement("option");
+    opt.value = n;
+    opt.textContent = n;
+    select.appendChild(opt);
+  });
+  if(current && names.includes(current)){
+    select.value = current;
+  } else if(current){
+    const opt = document.createElement("option");
+    opt.value = current;
+    opt.textContent = current + " (hors liste)";
+    select.appendChild(opt);
+    select.value = current;
+  }
+}
+
+function updateAll(){
+  const hint = document.getElementById("emptyHint");
+  if(hint) hint.style.display = listEl.children.length ? "none" : "block";
+  let weekTotal = 0;
+  listEl.querySelectorAll(".employee").forEach(emp=>{
+    const inputs = emp.querySelectorAll(".days-grid input");
+    let rowTotal = 0;
+    inputs.forEach(inp=> rowTotal += parseFloat(inp.value) || 0);
+    emp.querySelector(".rowTotal").textContent = rowTotal.toString().replace(".", ",");
+    weekTotal += rowTotal;
+  });
+  document.getElementById("weekTotal").textContent = weekTotal.toString().replace(".", ",") + " h";
+  saveState();
+}
+
+document.getElementById("addEmployeeBtn").addEventListener("click", ()=>{
+  listEl.appendChild(makeEmployeeRow("", [0,0,0,0,0]));
+  updateAll();
+  refreshResponsableOptions();
+});
+
+function initEmployees(names){
+  listEl.innerHTML = "";
+  names.forEach(n => listEl.appendChild(makeEmployeeRow(n, [0,0,0,0,0])));
+  updateAll();
+  refreshResponsableOptions();
+}
+
+// --- Signature pad ---
+const canvas = document.getElementById("sigPad");
+const ctx = canvas.getContext("2d");
+let drawing = false;
+let sigHasContent = false;
+
+function resizeCanvas(){
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  ctx.scale(ratio, ratio);
+  ctx.strokeStyle = "#2A2E33";
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+}
+window.addEventListener("resize", resizeCanvas);
+
+function getPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const point = e.touches ? e.touches[0] : e;
+  return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+}
+function startDraw(e){ drawing = true; sigHasContent = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); e.preventDefault(); }
+function moveDraw(e){ if(!drawing) return; const p = getPos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); e.preventDefault(); }
+function endDraw(){ drawing = false; saveState(); }
+
+canvas.addEventListener("mousedown", startDraw);
+canvas.addEventListener("mousemove", moveDraw);
+window.addEventListener("mouseup", endDraw);
+canvas.addEventListener("touchstart", startDraw);
+canvas.addEventListener("touchmove", moveDraw);
+canvas.addEventListener("touchend", endDraw);
+
+document.getElementById("clearSigBtn").addEventListener("click", ()=>{
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  sigHasContent = false;
+  saveState();
+});
+
+// --- Simple field bindings ---
+const fieldIds = ["responsable","semaineDu","semaineAu","chantier","ville","destEmail","repas","trajet","autres"];
+fieldIds.forEach(id=>{
+  const el = document.getElementById(id);
+  el.addEventListener(el.tagName === "SELECT" ? "change" : "input", saveState);
+});
+document.getElementById("vehiculeCheck").addEventListener("change", saveState);
+
+function collectState(){
+  const employees = [];
+  listEl.querySelectorAll(".employee").forEach(emp=>{
+    const name = emp.querySelector(".employee-head input").value;
+    const hours = Array.from(emp.querySelectorAll(".days-grid input")).map(i=>i.value);
+    employees.push({name, hours});
+  });
+  const state = { employees, fields:{}, vehicule: document.getElementById("vehiculeCheck").checked, sig: sigHasContent ? canvas.toDataURL() : null };
+  fieldIds.forEach(id => state.fields[id] = document.getElementById(id).value);
+  return state;
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState()));
+    setStatus("Enregistré localement sur cet appareil");
+  }catch(e){
+    setStatus("");
+  }
+}
+
+let statusTimer;
+function setStatus(msg){
+  const el = document.getElementById("statusMsg");
+  el.textContent = msg;
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(()=>{ el.textContent = ""; }, 1800);
+}
+
+function loadState(){
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){ saved = null; }
+
+  if(saved && saved.employees && saved.employees.length){
+    listEl.innerHTML = "";
+    saved.employees.forEach(emp => listEl.appendChild(makeEmployeeRow(emp.name, emp.hours)));
+    refreshResponsableOptions();
+    fieldIds.forEach(id => {
+      if(!saved.fields || saved.fields[id]===undefined) return;
+      if(id === "destEmail" && !saved.fields[id]) return;
+      const el = document.getElementById(id);
+      el.value = saved.fields[id];
+      if(el.tagName === "SELECT" && el.value !== saved.fields[id] && saved.fields[id] !== ""){
+        const opt = document.createElement("option");
+        opt.value = saved.fields[id];
+        opt.textContent = saved.fields[id] + " (hors liste)";
+        el.appendChild(opt);
+        el.value = saved.fields[id];
+      }
+    });
+    document.getElementById("vehiculeCheck").checked = !!saved.vehicule;
+    updateAll();
+    if(saved.sig){
+      const img = new Image();
+      img.onload = ()=>{ ctx.drawImage(img,0,0,canvas.width/(window.devicePixelRatio||1),canvas.height/(window.devicePixelRatio||1)); sigHasContent = true; };
+      img.src = saved.sig;
+    }
+  } else {
+    initEmployees([]);
+  }
+}
+
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  if(!confirm("Effacer toutes les données saisies et repartir d'une liste d'ouvriers vide ?")) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  fieldIds.forEach(id => document.getElementById(id).value = "");
+  document.getElementById("vehiculeCheck").checked = false;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  sigHasContent = false;
+  initEmployees([]);
+});
+
+function buildSummaryText(){
+  const chantier = document.getElementById("chantier").value.trim() || "(non renseigné)";
+  const ville = document.getElementById("ville").value.trim();
+  const responsable = document.getElementById("responsable").value.trim() || "(non renseigné)";
+  const du = document.getElementById("semaineDu").value;
+  const au = document.getElementById("semaineAu").value;
+
+  const lines = [];
+  lines.push("RAPPORT DE CHANTIER — SLAB CONSTRUCTION");
+  lines.push("Chantier : " + chantier + (ville ? " — " + ville : ""));
+  lines.push("Responsable : " + responsable);
+  lines.push("Semaine du " + (du || "?") + " au " + (au || "?"));
+  lines.push("");
+  lines.push("HEURES (LUN / MAR / MER / JEU / VEN — total)");
+
+  let weekTotal = 0;
+  let anyRow = false;
+  listEl.querySelectorAll(".employee").forEach(emp=>{
+    const name = emp.querySelector(".employee-head input").value.trim();
+    const hours = Array.from(emp.querySelectorAll(".days-grid input")).map(i => i.value || "0");
+    const total = hours.reduce((s,h)=> s + (parseFloat(h) || 0), 0);
+    weekTotal += total;
+    if(name && total > 0){
+      anyRow = true;
+      lines.push(name + " : " + hours.join(" / ") + "  -> " + total.toString().replace(".", ",") + " h");
+    }
+  });
+  if(!anyRow) lines.push("(aucune heure saisie)");
+
+  lines.push("");
+  lines.push("TOTAL SEMAINE : " + weekTotal.toString().replace(".", ",") + " h");
+  lines.push("");
+  lines.push("Véhicule personnel utilisé : " + (document.getElementById("vehiculeCheck").checked ? "Oui" : "Non"));
+  lines.push("Paniers repas : " + (document.getElementById("repas").value || "0"));
+
+  const trajet = document.getElementById("trajet").value.trim();
+  if(trajet) lines.push("Trajet : " + trajet);
+  const autres = document.getElementById("autres").value.trim();
+  if(autres) lines.push("Autres infos : " + autres);
+
+  lines.push("");
+  lines.push("(Récapitulatif texte — le rapport complet avec signature est joint en PDF à cet email.)");
+  return lines.join("\n");
+}
+
+function sanitizeFilePart(s){
+  return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "sans_nom";
+}
+
+function buildPdfDoc(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = 210, pageH = 297, margin = 14;
+  let y = 0;
+
+  const navy = [42, 46, 51], petrol = [26, 123, 140], orange = [238, 105, 30], muted = [107, 115, 120];
+
+  // Header band
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, pageW, 22, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("SLAB", margin, 11);
+  doc.setTextColor(...orange);
+  doc.text("CONSTRUCTION", margin + 20, 11);
+  doc.setFontSize(10);
+  doc.setTextColor(230, 230, 230);
+  doc.text("Rapport de chantier hebdomadaire", margin, 18);
+  y = 30;
+
+  const chantier = document.getElementById("chantier").value.trim() || "(non renseigné)";
+  const ville = document.getElementById("ville").value.trim();
+  const responsable = document.getElementById("responsable").value.trim() || "(non renseigné)";
+  const du = document.getElementById("semaineDu").value || "?";
+  const au = document.getElementById("semaineAu").value || "?";
+
+  doc.setTextColor(...navy);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10.5);
+  doc.text("Chantier : " + chantier + (ville ? "  —  " + ville : ""), margin, y); y += 6;
+  doc.text("Responsable de chantier : " + responsable, margin, y); y += 6;
+  doc.text("Semaine du " + du + " au " + au, margin, y); y += 9;
+
+  // Table
+  const colX = [margin, margin + 60, margin + 84, margin + 108, margin + 132, margin + 156, margin + 180];
+  const colW = [60, 24, 24, 24, 24, 24, pageW - margin - (margin + 180)];
+  const headers = ["Nom / Prénom", "LUN", "MAR", "MER", "JEU", "VEN", "Total"];
+  const rowH = 7;
+
+  function drawTableHeader(){
+    doc.setFillColor(...petrol);
+    doc.rect(margin, y, pageW - 2 * margin, rowH, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    headers.forEach((h, i) => doc.text(h, colX[i] + 2, y + rowH - 2.3));
+    y += rowH;
+  }
+  drawTableHeader();
+
+  let weekTotal = 0;
+  let anyRow = false;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  listEl.querySelectorAll(".employee").forEach(emp => {
+    const name = emp.querySelector(".employee-head input").value.trim();
+    const hours = Array.from(emp.querySelectorAll(".days-grid input")).map(i => i.value || "0");
+    const total = hours.reduce((s, h) => s + (parseFloat(h) || 0), 0);
+    weekTotal += total;
+    if(!name) return;
+    anyRow = true;
+    if(y + rowH > pageH - 20){
+      doc.addPage();
+      y = 16;
+      drawTableHeader();
+    }
+    doc.setDrawColor(218, 223, 224);
+    doc.rect(margin, y, pageW - 2 * margin, rowH);
+    doc.setTextColor(...navy);
+    doc.text(name.substring(0, 32), colX[0] + 2, y + rowH - 2.3);
+    hours.forEach((h, i) => {
+      doc.text((parseFloat(h) || 0).toString().replace(".", ","), colX[i + 1] + colW[i + 1] / 2, y + rowH - 2.3, { align: "center" });
+    });
+    doc.setFont("helvetica", "bold");
+    doc.text(total.toString().replace(".", ",") + " h", colX[6] + 2, y + rowH - 2.3);
+    doc.setFont("helvetica", "normal");
+    y += rowH;
+  });
+  if(!anyRow){
+    doc.setTextColor(...muted);
+    doc.text("(aucune heure saisie)", margin + 2, y + rowH - 2.3);
+    y += rowH;
+  }
+  y += 4;
+
+  doc.setFillColor(...petrol);
+  doc.rect(margin, y, pageW - 2 * margin, 9, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("TOTAL SEMAINE : " + weekTotal.toString().replace(".", ",") + " h", margin + 3, y + 6.3);
+  y += 16;
+
+  doc.setTextColor(...navy);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Véhicule personnel utilisé : " + (document.getElementById("vehiculeCheck").checked ? "Oui" : "Non"), margin, y); y += 6;
+  doc.text("Paniers repas : " + (document.getElementById("repas").value || "0"), margin, y); y += 6;
+
+  const trajet = document.getElementById("trajet").value.trim();
+  if(trajet){
+    const lines = doc.splitTextToSize("Trajet : " + trajet, pageW - 2 * margin);
+    doc.text(lines, margin, y); y += 5 * lines.length + 1;
+  }
+  const autres = document.getElementById("autres").value.trim();
+  if(autres){
+    const lines = doc.splitTextToSize("Autres informations : " + autres, pageW - 2 * margin);
+    doc.text(lines, margin, y); y += 5 * lines.length + 1;
+  }
+
+  y += 4;
+  doc.setFont("helvetica", "bold");
+  doc.text("Signature :", margin, y);
+  y += 3;
+  if(sigHasContent){
+    try{
+      const imgData = canvas.toDataURL("image/png");
+      doc.addImage(imgData, "PNG", margin, y, 70, 25);
+    }catch(e){}
+  } else {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...muted);
+    doc.text("(non signé)", margin, y + 6);
+  }
+
+  doc.setFontSize(8);
+  doc.setTextColor(...muted);
+  doc.text("SLAB CONSTRUCTION — Rapport de chantier généré depuis le formulaire mobile", margin, pageH - 10);
+
+  return doc;
+}
+
+document.getElementById("emailBtn").addEventListener("click", async ()=>{
+  const chantier = document.getElementById("chantier").value.trim() || "chantier";
+  const du = document.getElementById("semaineDu").value;
+  const au = document.getElementById("semaineAu").value;
+  let subject = "Rapport de chantier - " + chantier;
+  if(du) subject += " - semaine du " + du + (au ? " au " + au : "");
+  const dest = document.getElementById("destEmail").value.trim();
+  const filename = "rapport_chantier_" + sanitizeFilePart(chantier) + (du ? "_" + du : "") + ".pdf";
+
+  let pdfBlob;
+  try{
+    const doc = buildPdfDoc();
+    pdfBlob = doc.output("blob");
+  }catch(e){
+    setStatus("Erreur lors de la génération du PDF");
+    return;
+  }
+
+  const file = new File([pdfBlob], filename, { type: "application/pdf" });
+
+  if(navigator.canShare && navigator.canShare({ files: [file] })){
+    try{
+      await navigator.share({ files: [file], title: subject, text: subject });
+      return;
+    }catch(e){
+      // annulé ou échoué -> on retombe sur le repli ci-dessous
+    }
+  }
+
+  // Repli : télécharger le PDF puis ouvrir la messagerie avec le texte prérempli
+  const url = URL.createObjectURL(pdfBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(url), 4000);
+
+  setStatus("PDF téléchargé — joignez-le manuellement dans l'email qui s'ouvre");
+
+  setTimeout(()=>{
+    const mailtoUrl = "mailto:" + encodeURIComponent(dest)
+      + "?subject=" + encodeURIComponent(subject)
+      + "&body=" + encodeURIComponent(buildSummaryText() + "\n\n(Pensez à joindre le fichier PDF téléchargé : " + filename + ")");
+    window.location.href = mailtoUrl;
+  }, 800);
+});
+
+document.getElementById("printBtn").addEventListener("click", ()=> window.print());
+
+// Init
+resizeCanvas();
+const workerPoolList = document.getElementById("workerPoolList");
+WORKER_POOL.forEach(n=>{
+  const opt = document.createElement("option");
+  opt.value = n;
+  workerPoolList.appendChild(opt);
+});
+loadState();
+</script>
+
+</body>
+</html>
